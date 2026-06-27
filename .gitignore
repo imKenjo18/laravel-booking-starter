@@ -27,3 +27,14 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# AI Agents
+/.agents
+/.claude
+/.gemini
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+
+.mcp.json
+boost.json
