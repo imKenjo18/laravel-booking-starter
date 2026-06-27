@@ -3,9 +3,15 @@
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
@@ -31,20 +37,38 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureDefaults(): void
     {
+        /** @var Application $app */
+        $app = $this->app;
+        $isProduction = $app->isProduction();
+
         Date::use(CarbonImmutable::class);
 
-        DB::prohibitDestructiveCommands(
-            app()->isProduction(),
-        );
+        DB::prohibitDestructiveCommands($isProduction);
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
+        Model::shouldBeStrict(! $isProduction);
+
+        Password::defaults(fn (): Password => $isProduction
             ? Password::min(12)
                 ->mixedCase()
                 ->letters()
                 ->numbers()
                 ->symbols()
                 ->uncompromised()
-            : null,
+            : Password::min(8),
         );
+
+        URL::forceHttps($isProduction);
+
+        Vite::useAggressivePrefetching();
+
+        if ($this->app->runningUnitTests()) {
+            Str::createRandomStringsNormally();
+            Str::createUuidsNormally();
+
+            // Http::preventStrayRequests();
+            Process::preventStrayProcesses();
+
+            // Sleep::fake();
+        }
     }
 }
